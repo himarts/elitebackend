@@ -1,0 +1,32 @@
+import Joi from "joi";
+
+export const profileUpdateValidation = Joi.object({
+  username: Joi.string().alphanum().min(3).max(30),
+  bio: Joi.string().max(300),
+  gender: Joi.string().valid("Male", "Female", "Non-binary", "Other"),
+  dateOfBirth: Joi.date().iso(),
+  location: Joi.string(),
+  relationshipStatus: Joi.string().valid("Single", "Divorced", "Widowed"),
+  lookingFor: Joi.string().valid("Serious Relationship", "Friendship", "Casual Dating"),
+  preferredAgeRange: Joi.array().items(Joi.number().integer().min(18).max(100)).length(2),
+  genderPreference: Joi.string().valid("Male", "Female", "Non-binary", "Any"),
+  children: Joi.string().valid("No children", "Has children", "Open to children"),
+  occupation: Joi.string(),
+  company: Joi.string(),
+  educationLevel: Joi.string().valid("High School", "Bachelor’s", "Master’s", "PhD"),
+  incomeRange: Joi.string(),
+  preferredLocationRadius:Joi.string(),
+  workSchedule: Joi.string().valid("Full-time", "Part-time", "Freelancer", "Self-employed"),
+  workLifeBalance: Joi.string().valid("Workaholic", "Flexible", "Balanced"),
+  hobbies: Joi.array().items(Joi.string()),
+  languagesSpoken: Joi.array().items(Joi.string()),
+  interests: Joi.array().items(Joi.string()),
+  religion: Joi.string(),
+  politics: Joi.string(),
+  dietaryPreferences: Joi.string(),
+  smoking: Joi.string().valid("Smoker", "Non-smoker", "Social Smoker"),
+  drinking: Joi.string().valid("Non-drinker", "Social Drinker", "Regular Drinker"),
+  profilePicture: Joi.string().uri(),
+  photoGallery: Joi.array().items(Joi.string().uri()),
+  socialLinks: Joi.object().pattern(Joi.string(), Joi.string().uri()), // Example: { instagram: "url", linkedin: "url" }
+});
