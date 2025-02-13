@@ -8,7 +8,6 @@ export const registerValidation = Joi.object({
 });
 
 export const verifyValidation = Joi.object({
-  email: Joi.string().email().required(),
   verificationCode: Joi.string().length(6).required()
 });
 
