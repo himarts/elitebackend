@@ -118,7 +118,8 @@ export const loginUser = async (req, res) => {
       const user = await User.findOne({ email });
   
       if (!user) return res.status(400).json({ error: "User not found" });
-  
+      const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: "10m" });
+
       // Generate Reset Code
       const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
       user.verificationCode = resetCode;
@@ -127,34 +128,90 @@ export const loginUser = async (req, res) => {
       // Send reset code via email
       await sendResetPasswordEmail(email, resetCode);
   
-      res.json({ message: "Password reset code sent to email" });
+      res.json({ message: "Password reset code sent to email" , token});
     } catch (error) {
       res.status(500).json({ error: "Server error" });
     }
   };
-  
-  // ✅ Reset Password
-  export const resetPassword = async (req, res) => {
+
+
+  export const verifyPasswordResetCode = async (req, res) => {
     try {
-      const { email, resetCode, newPassword } = req.body;
-      const user = await User.findOne({ email });
+      // Get token from headers
+      const authHeader = req.headers.authorization;
   
-      if (!user) return res.status(400).json({ error: "User not found" });
-  
-      if (user.verificationCode !== resetCode) {
-        return res.status(400).json({ error: "Invalid reset code" });
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Invalid token format" });
       }
   
-      // Hash new password
+      const token = authHeader.split(" ")[1]; // Extract the token
+  
+      // Decode token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  
+      const email = decoded.email; // Ensure email is present in token
+      const { verificationCode } = req.body;
+  
+      const user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ error: "User not found" });
+  
+      if (user.verificationCode !== verificationCode) {
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+  
+      user.isVerified = true;
+      user.verificationCode = null;
+      await user.save();
+
+      return res.json({ message: "User verified successfully." });
+    } catch (error) {
+      console.error("JWT Verification Error:", error.message);
+      return res.status(401).json({ error: "Invalid token" });
+    }
+  };
+  
+  
+ // Adjust as per your project structure
+  
+  export const resetPassword = async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: "Reset token is required" });
+      }
+  
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters long" });
+      }
+  
+      // Verify and decode the reset token
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET); // Use a dedicated secret for reset tokens
+      } catch (error) {
+        return res.status(401).json({ error: "Invalid or expired reset token" });
+      }
+  
+      const { email } = decoded;
+  
+      // Find the user by email
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      // Hash new password and update user record
       user.password = await bcrypt.hash(newPassword, 10);
-      user.verificationCode = null; // Clear the reset code
+      user.verificationCode = null; // Clear any reset code if stored
       await user.save();
   
       res.json({ message: "Password reset successful" });
     } catch (error) {
+      console.error("Password Reset Error:", error);
       res.status(500).json({ error: "Server error" });
     }
   };
+  
 
   export const resendVerificationCode = async (req, res) => {
     try {

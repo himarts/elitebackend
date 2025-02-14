@@ -22,7 +22,6 @@ export const loginValidation = Joi.object({
   });
   
   export const resetPasswordValidation = Joi.object({
-    email: Joi.string().email().required(),
-    resetCode: Joi.string().length(6).required(),
+    token: Joi.string().required(),
     newPassword: Joi.string().min(8).required()
   });
